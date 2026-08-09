@@ -1,0 +1,74 @@
+version: '3.8'
+
+# TeleMedicine AI - Full stack development/deployment
+#
+# Services:
+#   - frontend : React/Vite web dashboard
+#   - api      : Express decision-support REST API (heuristic engine + RBAC + Swagger)
+#   - postgres : PostgreSQL database (state/datasets, when persistence enabled)
+#   - mongo    : MongoDB database (analytics, when persistence enabled)
+#
+# The api works offline without databases (in-memory by default). Databases are
+# provided as optional persistence. See backend/.env.example for configuration.
+
+services:
+  # ---- Frontend web dashboard ----
+  frontend:
+    build:
+      context: ./mental-health-bot-main
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    environment:
+      VITE_API_URL: http://localhost:8080/api
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ---- Express decision-support REST API ----
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      JWT_EXPIRES_IN: 2h
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      # Database persistence (optional - default uses in-memory mock user store)
+      # DATABASE_URL: postgres://postgres:postgres@postgres:5432/telemed
+      # MONGODB_URI: mongodb://mongo:27017/telemed
+    depends_on:
+      - postgres
+      - mongo
+    restart: unless-stopped
+
+  # ---- PostgreSQL database ----
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: telemed
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # ---- MongoDB database ----
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongo_data:
+

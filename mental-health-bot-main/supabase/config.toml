@@ -1,0 +1,19 @@
+project_id = "nfopzghomvcnsegvvysc"
+
+[functions.ai-prediction]
+verify_jwt = false
+
+[functions.mental-health-analysis]
+verify_jwt = false
+
+[functions.mental-health-chat]
+verify_jwt = false
+
+[functions.send-appointment-reminder]
+verify_jwt = false
+
+[functions.check-appointment-reminders]
+verify_jwt = false
+
+[functions.process-dataset]
+verify_jwt = false
