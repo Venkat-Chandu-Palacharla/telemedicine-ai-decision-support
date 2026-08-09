@@ -241,12 +241,12 @@ Once a trained, **calibrated** ML model is integrated, the API may return a true
 
 > ⚠️ **Important**: The numbers below are **illustrative placeholders** shown to demonstrate the reporting format. They are **not** produced by real training runs. Once you run `python run_all.py` with the actual datasets, these will be replaced by real metrics from `ml/outputs/*_metrics_report.csv`.
 
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
-|-------|----------|-----------|--------|-----|---------|
-| Logistic Regression | 82.1% | 80.4% | 78.9% | 79.6% | 0.86 |
-| Random Forest | 84.7% | 83.2% | 81.5% | 82.3% | 0.89 |
-| XGBoost | 87.3% | 86.1% | 84.8% | 85.4% | 0.92 |
-| Neural Network | 85.8% | 84.3% | 82.7% | 83.5% | 0.90 |
+| Model               | Accuracy | Precision | Recall | F1 | ROC-AUC |
+| ------------------- | -------: | --------: | -----: | -: | ------: |
+| Logistic Regression |        — |         — |      — |  — |       — |
+| Random Forest       |        — |         — |      — |  — |       — |
+| XGBoost             |        — |         — |      — |  — |       — |
+| Neural Network      |        — |         — |      — |  — |       — |
 
 ---
 
