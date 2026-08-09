@@ -2,7 +2,7 @@
 
 > ⚠️ **Important Disclaimer**: This system is a **decision-support tool** and is **not a substitute for professional medical diagnosis**. All outputs are **deterministic risk scores** (heuristic estimates) and must be verified by qualified healthcare professionals before any clinical decisions are made. The default heuristic engine does **not** produce a statistically calibrated probability.
 
-An end-to-end AI healthcare decision-support platform for disease risk prediction, built for a **research/educational portfolio** and designed to be defensible in AI/ML graduate interviews.
+An end-to-end AI healthcare decision-support platform built as a research and educational project, demonstrating machine learning, explainable AI, model evaluation, probability calibration, and full-stack deployment.
 
 ## Overview
 
