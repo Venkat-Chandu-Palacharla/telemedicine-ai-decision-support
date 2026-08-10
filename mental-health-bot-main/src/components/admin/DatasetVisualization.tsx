@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,11 +67,34 @@ export default function DatasetVisualization({ datasetId, datasetName, onClose }
   const [categoryDistribution, setCategoryDistribution] = useState<{ name: string; value: number }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    analyzeDataset();
-  }, [datasetId]);
+  const generateMockData = useCallback(() => {
+    // Mental health dataset mock statistics
+    const mockFeatures: FeatureStats[] = [
+      {
+        name: 'Stress Level', mean: 5.2, min: 0, max: 10, std: 2.1,
+        distribution: [{ range: '0-2', count: 120 }, { range: '3-4', count: 280 }, { range: '5-6', count: 350 }, { range: '7-8', count: 180 }, { range: '9-10', count: 70 }]
+      },
+      {
+        name: 'Anxiety Level', mean: 4.8, min: 0, max: 10, std: 2.3,
+        distribution: [{ range: '0-2', count: 150 }, { range: '3-4', count: 300 }, { range: '5-6', count: 320 }, { range: '7-8', count: 160 }, { range: '9-10', count: 70 }]
+      },
+      {
+        name: 'Sleep Hours', mean: 6.5, min: 2, max: 12, std: 1.8,
+        distribution: [{ range: '2-4', count: 80 }, { range: '5-6', count: 350 }, { range: '7-8', count: 420 }, { range: '9-10', count: 120 }, { range: '11-12', count: 30 }]
+      },
+      {
+        name: 'Mood Rating', mean: 5.8, min: 1, max: 10, std: 1.9,
+        distribution: [{ range: '1-2', count: 60 }, { range: '3-4', count: 180 }, { range: '5-6', count: 380 }, { range: '7-8', count: 280 }, { range: '9-10', count: 100 }]
+      },
+    ];
+    setFeatureStats(mockFeatures);
+    setCorrelations([
+      { feature1: 'Stress', feature2: 'Anxiety', correlation: 0.78 }, { feature1: 'Stress', feature2: 'Sleep', correlation: -0.52 }, { feature1: 'Stress', feature2: 'Mood', correlation: -0.65 }, { feature1: 'Anxiety', feature2: 'Sleep', correlation: -0.48 }, { feature1: 'Anxiety', feature2: 'Mood', correlation: -0.71 }, { feature1: 'Sleep', feature2: 'Mood', correlation: 0.62 },
+    ]);
+    setCategoryDistribution([{ name: 'Good Mental Health', value: 320 }, { name: 'Moderate Concern', value: 480 }, { name: 'High Concern', value: 200 }]);
+  }, []);
 
-  const analyzeDataset = async () => {
+  const analyzeDataset = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -88,95 +111,18 @@ export default function DatasetVisualization({ datasetId, datasetName, onClose }
         setCorrelations(data.correlations || []);
         setCategoryDistribution(data.categoryDistribution || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Analysis error:', err);
       // Generate mock data for visualization demo
       generateMockData();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [datasetId, generateMockData]);
 
-  const generateMockData = () => {
-    // Mental health dataset mock statistics
-    const mockFeatures: FeatureStats[] = [
-      {
-        name: 'Stress Level',
-        mean: 5.2,
-        min: 0,
-        max: 10,
-        std: 2.1,
-        distribution: [
-          { range: '0-2', count: 120 },
-          { range: '3-4', count: 280 },
-          { range: '5-6', count: 350 },
-          { range: '7-8', count: 180 },
-          { range: '9-10', count: 70 },
-        ]
-      },
-      {
-        name: 'Anxiety Level',
-        mean: 4.8,
-        min: 0,
-        max: 10,
-        std: 2.3,
-        distribution: [
-          { range: '0-2', count: 150 },
-          { range: '3-4', count: 300 },
-          { range: '5-6', count: 320 },
-          { range: '7-8', count: 160 },
-          { range: '9-10', count: 70 },
-        ]
-      },
-      {
-        name: 'Sleep Hours',
-        mean: 6.5,
-        min: 2,
-        max: 12,
-        std: 1.8,
-        distribution: [
-          { range: '2-4', count: 80 },
-          { range: '5-6', count: 350 },
-          { range: '7-8', count: 420 },
-          { range: '9-10', count: 120 },
-          { range: '11-12', count: 30 },
-        ]
-      },
-      {
-        name: 'Mood Rating',
-        mean: 5.8,
-        min: 1,
-        max: 10,
-        std: 1.9,
-        distribution: [
-          { range: '1-2', count: 60 },
-          { range: '3-4', count: 180 },
-          { range: '5-6', count: 380 },
-          { range: '7-8', count: 280 },
-          { range: '9-10', count: 100 },
-        ]
-      },
-    ];
-
-    const mockCorrelations: CorrelationData[] = [
-      { feature1: 'Stress', feature2: 'Anxiety', correlation: 0.78 },
-      { feature1: 'Stress', feature2: 'Sleep', correlation: -0.52 },
-      { feature1: 'Stress', feature2: 'Mood', correlation: -0.65 },
-      { feature1: 'Anxiety', feature2: 'Sleep', correlation: -0.48 },
-      { feature1: 'Anxiety', feature2: 'Mood', correlation: -0.71 },
-      { feature1: 'Sleep', feature2: 'Mood', correlation: 0.62 },
-    ];
-
-    const mockCategories = [
-      { name: 'Good Mental Health', value: 320 },
-      { name: 'Moderate Concern', value: 480 },
-      { name: 'High Concern', value: 200 },
-    ];
-
-    setFeatureStats(mockFeatures);
-    setCorrelations(mockCorrelations);
-    setCategoryDistribution(mockCategories);
-  };
+  useEffect(() => {
+    analyzeDataset();
+  }, [analyzeDataset]);
 
   const getCorrelationColor = (value: number) => {
     const absValue = Math.abs(value);

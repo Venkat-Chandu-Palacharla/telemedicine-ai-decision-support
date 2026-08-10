@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -96,11 +96,7 @@ export default function MLDatasetManager({ onBack }: MLDatasetManagerProps) {
   const { user } = useAuth();
 
   // Fetch datasets and training runs on mount
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [datasetsRes, runsRes] = await Promise.all([
@@ -123,7 +119,11 @@ export default function MLDatasetManager({ onBack }: MLDatasetManagerProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -211,11 +211,11 @@ export default function MLDatasetManager({ onBack }: MLDatasetManagerProps) {
         title: 'Dataset Uploaded',
         description: `${selectedFile.name} has been uploaded successfully.`
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
       toast({
         title: 'Upload Failed',
-        description: error.message || 'Failed to upload dataset. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to upload dataset. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -240,11 +240,11 @@ export default function MLDatasetManager({ onBack }: MLDatasetManagerProps) {
         title: 'Dataset Deleted',
         description: 'The dataset has been removed.'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
-        description: error.message || 'Failed to delete dataset.',
+        description: error instanceof Error ? error.message : 'Failed to delete dataset.',
         variant: 'destructive'
       });
     }
@@ -329,11 +329,11 @@ export default function MLDatasetManager({ onBack }: MLDatasetManagerProps) {
         title: 'Training Complete',
         description: `Model achieved ${accuracy.toFixed(1)}% accuracy.`
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Training error:', error);
       toast({
         title: 'Training Failed',
-        description: error.message || 'Failed to train model.',
+        description: error instanceof Error ? error.message : 'Failed to train model.',
         variant: 'destructive'
       });
     } finally {

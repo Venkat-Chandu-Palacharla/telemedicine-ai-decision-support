@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,12 +39,7 @@ export default function DoctorReview({ onBack }: DoctorReviewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!user) return;
-    fetchCompletedAppointments();
-  }, [user]);
-
-  const fetchCompletedAppointments = async () => {
+  const fetchCompletedAppointments = useCallback(async () => {
     setIsLoading(true);
     try {
       // Get completed appointments
@@ -119,7 +114,12 @@ export default function DoctorReview({ onBack }: DoctorReviewProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchCompletedAppointments();
+  }, [fetchCompletedAppointments, user]);
 
   const handleOpenReview = (appointment: CompletedAppointment) => {
     setSelectedAppointment(appointment);

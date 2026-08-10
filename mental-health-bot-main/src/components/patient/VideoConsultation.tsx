@@ -356,6 +356,7 @@ const toggleScreenShare = async () => {
   };
 
   useEffect(() => {
+    const localVideo = localVideoRef.current;
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -363,8 +364,8 @@ const toggleScreenShare = async () => {
       if (waitingTimerRef.current) {
         clearInterval(waitingTimerRef.current);
       }
-      if (localVideoRef.current?.srcObject) {
-        const stream = localVideoRef.current.srcObject as MediaStream;
+      if (localVideo?.srcObject) {
+        const stream = localVideo.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
       }
     };

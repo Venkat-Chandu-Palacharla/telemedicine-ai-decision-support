@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,11 +53,7 @@ export default function UserManagement() {
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch profiles with their roles
@@ -85,7 +81,7 @@ export default function UserManagement() {
       });
 
       setUsers(usersWithRoles);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching users:', error);
       toast({
         title: 'Error',
@@ -95,7 +91,11 @@ export default function UserManagement() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
@@ -116,11 +116,11 @@ export default function UserManagement() {
       setDeleteDialogOpen(false);
       setSelectedUser(null);
       await fetchUsers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
-        description: error.message || 'Failed to delete user.',
+        description: error instanceof Error ? error.message : 'Failed to delete user.',
         variant: 'destructive'
       });
     } finally {
@@ -160,11 +160,11 @@ const handleRoleChange = async (userId: string, newRole: string) => {
       });
 
       await fetchUsers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Role update error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update role: ' + (error.message || 'Unknown error'),
+        description: 'Failed to update role: ' + (error instanceof Error ? error.message : 'Unknown error'),
         variant: 'destructive'
       });
     }

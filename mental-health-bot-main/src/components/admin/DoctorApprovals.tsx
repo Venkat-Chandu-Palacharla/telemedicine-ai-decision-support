@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,11 +66,7 @@ const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    fetchDoctors();
-  }, [filter]);
-
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     setIsLoading(true);
     try {
       let query = supabase
@@ -96,7 +92,7 @@ const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'
       }));
 
       setDoctors(transformedData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching doctors:', error);
       toast({
         title: 'Error',
@@ -106,7 +102,11 @@ const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter, toast]);
+
+  useEffect(() => {
+    fetchDoctors();
+  }, [fetchDoctors]);
 
 // Function to fix role for a doctor - useful if role wasn't assigned properly before
   const fixDoctorRole = async (doctorId: string) => {
@@ -123,11 +123,11 @@ const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'
         title: 'Role Fixed',
         description: 'Doctor role has been assigned. User should log out and log back in.'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Fix role error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fix role: ' + (error.message || 'Unknown error'),
+        description: 'Failed to fix role: ' + (error instanceof Error ? error.message : 'Unknown error'),
         variant: 'destructive'
       });
     }
@@ -169,11 +169,11 @@ const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'
       });
 
       await fetchDoctors();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Approval error:', error);
       toast({
         title: 'Approval Failed',
-        description: error.message || 'Failed to approve doctor.',
+        description: error instanceof Error ? error.message : 'Failed to approve doctor.',
         variant: 'destructive'
       });
     } finally {
@@ -213,11 +213,11 @@ const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'
       setSelectedDoctor(null);
       setRejectionReason('');
       await fetchDoctors();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Rejection error:', error);
       toast({
         title: 'Rejection Failed',
-        description: error.message || 'Failed to reject doctor.',
+        description: error instanceof Error ? error.message : 'Failed to reject doctor.',
         variant: 'destructive'
       });
     } finally {
