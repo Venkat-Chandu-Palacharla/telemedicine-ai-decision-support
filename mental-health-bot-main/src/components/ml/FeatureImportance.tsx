@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { AlertTriangle, BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface Feature {
   name: string;
@@ -85,10 +85,17 @@ export default function FeatureImportance({ diseaseType }: FeatureImportanceProp
           Feature Importance - {diseaseName}
         </CardTitle>
         <CardDescription>
-          Top 5 most influential medical features for prediction (XAI Analysis)
+          Illustrative feature examples; no trained-model explanation is connected
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <p>
+            Values and descriptions below are illustrative only. They are not produced by SHAP
+            or by the current prediction service.
+          </p>
+        </div>
         {features.map((feature, index) => (
           <div key={feature.name} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -112,13 +119,10 @@ export default function FeatureImportance({ diseaseType }: FeatureImportanceProp
         ))}
 
 <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-          <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 text-sm">XAI Transparency Note</h4>
+          <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 text-sm">Illustrative Demo Note</h4>
           <p className="text-xs text-blue-700 dark:text-blue-400">
-            Feature importance values are computed using <strong>SHAP</strong> (SHapley Additive exPlanations)
-            on the <strong>best-performing model</strong> for each disease. SHAP attributes the contribution of each
-            medical feature to individual predictions, providing locally faithful and globally consistent
-            explanations. This ensures transparency in how the AI model makes healthcare decisions, aligning
-            with responsible-AI best practices for decision-support systems.
+            These example values are static UI content. They do not explain this prediction or
+            represent a SHAP analysis.
           </p>
         </div>
       </CardContent>

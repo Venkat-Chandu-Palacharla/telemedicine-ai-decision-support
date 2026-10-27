@@ -1,19 +1,27 @@
 import "dotenv/config";
 
 const NODE_ENV = process.env.NODE_ENV ?? "development";
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+const rawJwtSecret = process.env.JWT_SECRET;
 const DEFAULT_SECRET = "dev-secret-change-me";
+const unsafeProductionSecrets = new Set([
+  DEFAULT_SECRET,
+  "change-me-to-a-long-random-secret",
+]);
 
-// Security: fail fast in production if the default JWT secret is still in use.
-// The default secret is only acceptable for local development / tests.
-if (NODE_ENV === "production" && JWT_SECRET === DEFAULT_SECRET) {
+if (
+  NODE_ENV === "production" &&
+  (!rawJwtSecret ||
+    rawJwtSecret.trim().length < 32 ||
+    unsafeProductionSecrets.has(rawJwtSecret.trim().toLowerCase()))
+) {
   throw new Error(
-    "FATAL: JWT_SECRET is not set. Refusing to start in production with the default development secret. " +
-      "Set a strong, unique JWT_SECRET environment variable."
+    "FATAL: Configure a strong, unique JWT_SECRET of at least 32 characters for production."
   );
 }
+
+const JWT_SECRET = rawJwtSecret ?? DEFAULT_SECRET;
+
 if (JWT_SECRET === DEFAULT_SECRET) {
-  // Non-production warning (dev/test) so the default is never silently used in prod.
   console.warn("[env] WARNING: Using the default dev JWT_SECRET. Set JWT_SECRET for any non-local deployment.");
 }
 
@@ -31,4 +39,3 @@ export const env = {
     .map((o) => o.trim())
     .filter(Boolean),
 };
-

@@ -10,8 +10,6 @@ import { diseaseTypes } from '@/data/mockData';
 import { HealthParameters, PredictionResult, DiseaseType } from '@/types/telemedicine';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import ModelComparisonTable from '@/components/ml/ModelComparisonTable';
-import FeatureImportance from '@/components/ml/FeatureImportance';
 import { jsPDF } from 'jspdf';
 
 interface DiseasePredictionProps {
@@ -78,72 +76,10 @@ export default function DiseasePrediction({ onBack }: DiseasePredictionProps) {
     }
   };
 
-// Model information for PDF
-  const modelInfo: Record<string, { model: string; accuracy: string; rocAuc: string; justification: string }> = {
-    'heart-disease': {
-      model: 'Gradient Boosting',
-      accuracy: '92.4%',
-      rocAuc: '0.96',
-      justification: 'Handles non-linear patterns and complex feature interactions common in cardiovascular data.'
-    },
-    'diabetes': {
-      model: 'Random Forest',
-      accuracy: '94.1%',
-      rocAuc: '0.97',
-      justification: 'Provides robust predictions with reduced overfitting, ideal for mixed feature types in metabolic datasets.'
-    },
-    'parkinsons': {
-      model: 'SVM (Support Vector Machine)',
-      accuracy: '95.6%',
-      rocAuc: '0.98',
-      justification: 'Excellent for high-dimensional voice/motor feature data with clear margin separation.'
-    },
-    'hypertension': {
-      model: 'Gradient Boosting',
-      accuracy: '91.2%',
-      rocAuc: '0.95',
-      justification: 'Captures complex feature interactions essential for blood pressure prediction.'
-    }
-  };
-
-  // Feature importance for PDF
-  const featureImportance: Record<string, { name: string; importance: number; impact: string }[]> = {
-    'heart-disease': [
-      { name: 'Age', importance: 92, impact: 'negative' },
-      { name: 'Chest Pain Type', importance: 88, impact: 'negative' },
-      { name: 'Max Heart Rate', importance: 85, impact: 'positive' },
-      { name: 'ST Depression', importance: 82, impact: 'negative' },
-      { name: 'Cholesterol', importance: 78, impact: 'negative' }
-    ],
-    'diabetes': [
-      { name: 'Glucose Level', importance: 95, impact: 'negative' },
-      { name: 'BMI', importance: 89, impact: 'negative' },
-      { name: 'Age', importance: 84, impact: 'negative' },
-      { name: 'Blood Pressure', importance: 76, impact: 'negative' },
-      { name: 'Insulin Level', importance: 72, impact: 'neutral' }
-    ],
-    'parkinsons': [
-      { name: 'MDVP:Fo(Hz)', importance: 94, impact: 'negative' },
-      { name: 'MDVP:Jitter(%)', importance: 91, impact: 'negative' },
-      { name: 'MDVP:Shimmer', importance: 87, impact: 'negative' },
-      { name: 'HNR', importance: 83, impact: 'positive' },
-      { name: 'RPDE', importance: 79, impact: 'negative' }
-    ],
-    'hypertension': [
-      { name: 'Systolic BP', importance: 96, impact: 'negative' },
-      { name: 'Diastolic BP', importance: 91, impact: 'negative' },
-      { name: 'Age', importance: 86, impact: 'negative' },
-      { name: 'BMI', importance: 81, impact: 'negative' },
-      { name: 'Salt Intake', importance: 74, impact: 'negative' }
-    ]
-  };
-
   const downloadPredictionReport = () => {
     if (!result || !selectedDisease) return;
 
     const doc = new jsPDF();
-    const model = modelInfo[selectedDisease.id] || modelInfo['heart-disease'];
-    const features = featureImportance[selectedDisease.id] || featureImportance['heart-disease'];
     const date = new Date().toLocaleDateString();
     
     // Header with gradient effect
@@ -188,22 +124,14 @@ export default function DiseasePrediction({ onBack }: DiseasePredictionProps) {
     doc.setFontSize(14);
     doc.text(`${result.riskLevel} Risk`, 30, yPos + 13);
 
-    // Risk Percentage
+    // Heuristic/AI score; this service does not provide a calibrated probability.
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
     doc.text(`${result.riskPercentage}%`, 100, yPos + 15);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Risk Percentage', 100, yPos + 22);
-
-    // Confidence Score
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${result.confidence}%`, 150, yPos + 15);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('AI Confidence', 150, yPos + 22);
+    doc.text('Risk score (not probability)', 100, yPos + 22);
 
     // Input Parameters Section
     yPos += 35;
@@ -217,83 +145,70 @@ export default function DiseasePrediction({ onBack }: DiseasePredictionProps) {
     doc.setFontSize(9);
     doc.text(`Age: ${parameters.age} years  |  BMI: ${parameters.bmi} kg/m²  |  Blood Pressure: ${parameters.bloodPressureSystolic}/${parameters.bloodPressureDiastolic} mmHg  |  Glucose: ${parameters.bloodGlucose} mg/dL`, 20, yPos + 18);
 
-    // ML Model Information Section
+    // Prediction provenance and verified evaluation metrics.
     yPos += 35;
     doc.setFillColor(124, 58, 237);
     doc.rect(15, yPos, 180, 8, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('ML Model Information', 20, yPos + 6);
+    doc.text('Model and Evaluation Information', 20, yPos + 6);
 
     yPos += 12;
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Model Used:', 20, yPos);
+    doc.text('Prediction service:', 20, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text(model.model, 55, yPos);
-    
-yPos += 7;
+    doc.text('Supabase AI Edge Function (ai-prediction)', 62, yPos);
+
+    yPos += 7;
     doc.setFont('helvetica', 'bold');
     doc.text('Accuracy:', 20, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text(model.accuracy, 55, yPos);
+    doc.text('Not available', 55, yPos);
 
     yPos += 7;
     doc.setFont('helvetica', 'bold');
     doc.text('ROC-AUC:', 20, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text(model.rocAuc, 55, yPos);
+    doc.text('Not available', 55, yPos);
 
     yPos += 7;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Justification:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    const justLines = doc.splitTextToSize(model.justification, 130);
-    doc.text(justLines, 55, yPos);
-    yPos += justLines.length * 5;
-
-    // Validation note
-    yPos += 5;
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('Models trained using 80-20 train-test split with 5-fold cross-validation. Evaluated using Accuracy, Precision, Recall, and F1-Score.', 20, yPos);
+    doc.text(
+      'No trained model evaluation metrics or fitted calibrator are connected to this prediction service.',
+      20,
+      yPos,
+    );
 
-    // Feature Importance Section
+    // The Edge Function returns AI-generated factor notes, not SHAP values.
     yPos += 12;
     doc.setFillColor(34, 197, 94);
     doc.rect(15, yPos, 180, 8, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Feature Importance (XAI Analysis)', 20, yPos + 6);
+    doc.text('AI-Generated Factor Notes (Not SHAP)', 20, yPos + 6);
 
     yPos += 12;
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(9);
-    features.forEach((feature, index) => {
-      const impactColor = feature.impact === 'positive' ? [34, 197, 94] : 
-                          feature.impact === 'negative' ? [239, 68, 68] : [156, 163, 175];
-      
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${index + 1}. ${feature.name}`, 25, yPos);
-      
-      // Progress bar background
-      doc.setFillColor(229, 231, 235);
-      doc.rect(90, yPos - 3, 60, 4, 'F');
-      
-      // Progress bar fill
-      doc.setFillColor(impactColor[0], impactColor[1], impactColor[2]);
-      doc.rect(90, yPos - 3, (feature.importance / 100) * 60, 4, 'F');
-      
-      doc.text(`${feature.importance}%`, 155, yPos);
-      doc.setFontSize(7);
-      doc.text(`(${feature.impact})`, 170, yPos);
-      doc.setFontSize(9);
-      
+    const factors = result.factors ?? [];
+    if (factors.length === 0) {
+      doc.text('Not available', 25, yPos);
       yPos += 8;
-    });
+    } else {
+      factors.forEach((factor) => {
+        const factorLine = doc.splitTextToSize(
+          `${factor.name}: ${factor.impact} impact (AI-generated; not a validated explanation)`,
+          165,
+        );
+        doc.text(factorLine, 25, yPos);
+        yPos += factorLine.length * 5 + 2;
+      });
+    }
 
     // Recommendations Section
     yPos += 5;
@@ -320,14 +235,14 @@ yPos += 7;
     doc.setTextColor(100, 100, 100);
     doc.setFontSize(8);
     doc.text('This AI-generated report is for informational purposes only. Always consult healthcare professionals for medical decisions.', 20, 282);
-    doc.text('Powered by TeleMed AI - Advanced Machine Learning for Healthcare', 20, 289);
+    doc.text('Powered by TeleMed AI - Decision-Support Tool', 20, 289);
 
     // Save PDF
     doc.save(`${selectedDisease.name.replace(/\s+/g, '_')}_Prediction_Report_${date.replace(/\//g, '-')}.pdf`);
 
     toast({
       title: 'Report Downloaded',
-      description: 'Your AI prediction report with model explanations has been saved as PDF.'
+      description: 'Your decision-support report has been saved as PDF.'
     });
   };
 
@@ -471,20 +386,20 @@ yPos += 7;
             <CardContent className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Risk Percentage</span>
+                  <span className="text-sm text-muted-foreground">Risk score (not calibrated probability)</span>
                   <span className="text-2xl font-bold text-foreground">{result.riskPercentage}%</span>
                 </div>
                 <Progress value={result.riskPercentage} className="h-3" />
               </div>
 
-<div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <span className="text-sm text-muted-foreground">AI Confidence Score</span>
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <span className="text-sm text-muted-foreground">AI-generated confidence estimate (unvalidated)</span>
                 <span className="font-semibold text-foreground">{result.confidence}%</span>
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <span className="text-sm text-muted-foreground">Model ROC-AUC (discrimination)</span>
-                <span className="font-semibold text-foreground">{result.rocAuc?.toFixed(3) ?? '—'}</span>
+                <span className="text-sm text-muted-foreground">Model evaluation ROC-AUC</span>
+                <span className="font-semibold text-foreground">Not available</span>
               </div>
 
               {/* Decision-support interpretation guidance */}
@@ -495,8 +410,9 @@ yPos += 7;
                 </h4>
                 <p className="text-xs text-amber-700 dark:text-amber-500">
                   This is a <strong>decision-support estimate</strong>, not a medical diagnosis. The risk
-                  percentage reflects a model-based probability that your health parameters align with known
-                  risk patterns for {selectedDisease.name}. It should be used as a conversation starter with a
+                  percentage is an AI-generated risk score, not a statistically calibrated probability, for
+                  {` ${selectedDisease.name}`}. The confidence estimate is not a validated statistical measure.
+                  It should be used as a conversation starter with a
                   qualified healthcare professional, not as a standalone conclusion.
                 </p>
               </div>
@@ -538,10 +454,6 @@ yPos += 7;
               </ul>
             </CardContent>
           </Card>
-
-          {/* ML Model Information */}
-          <ModelComparisonTable diseaseType={selectedDisease.id} />
-          <FeatureImportance diseaseType={selectedDisease.id} />
 
           {/* Link to full documentation */}
           <Card className="border-primary/30 bg-primary/5">

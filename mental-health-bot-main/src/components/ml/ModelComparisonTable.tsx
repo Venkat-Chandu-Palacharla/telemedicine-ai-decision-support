@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CheckCircle2, Trophy } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Trophy } from 'lucide-react';
 
 interface ModelMetrics {
   model: string;
@@ -115,7 +115,7 @@ export default function ModelComparisonTable({ diseaseType, showSelectedOnly = f
               Model Comparison - {diseaseName}
             </CardTitle>
             <CardDescription>
-              Performance metrics comparison across different ML algorithms
+              Illustrative model comparison; it is not connected to training output
             </CardDescription>
           </div>
           <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
@@ -124,14 +124,18 @@ export default function ModelComparisonTable({ diseaseType, showSelectedOnly = f
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <p>
+            All values and selections below are illustrative demo data, not measured model
+            performance. No trained-model evaluation report is connected to this page.
+          </p>
+        </div>
         {/* Train/Val/Test + Validation Methodology */}
         <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
           <p className="text-sm text-blue-700 dark:text-blue-400">
-            <span className="font-semibold">Validation Methodology:</span> Models are trained using a
-            proper <span className="font-medium">70% train / 15% validation / 15% test</span> split.
-            Class imbalance is handled with <span className="font-medium">SMOTE</span> during preprocessing.
-            Models were evaluated using 5-fold cross-validation on the training set, then assessed on the
-            held-out test set with accuracy, precision, recall, F1-score, and ROC-AUC.
+            The research pipeline is configured for a 70% train / 15% validation / 15% test split
+            and applies SMOTE to training data. Cross-validation is not currently implemented.
           </p>
         </div>
 
@@ -173,9 +177,9 @@ export default function ModelComparisonTable({ diseaseType, showSelectedOnly = f
                 </TableCell>
                 <TableCell className="text-center">
                   {model.isSelected ? (
-                    <Badge className="bg-primary text-primary-foreground">Final Model</Badge>
+                    <Badge className="bg-primary text-primary-foreground">Illustrative</Badge>
                   ) : (
-                    <Badge variant="outline">Evaluated</Badge>
+                    <Badge variant="outline">Example</Badge>
                   )}
                 </TableCell>
               </TableRow>

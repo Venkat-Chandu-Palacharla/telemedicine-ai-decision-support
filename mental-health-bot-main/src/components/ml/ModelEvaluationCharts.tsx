@@ -12,7 +12,7 @@ import {
   Bar,
   Cell,
 } from 'recharts';
-import { Activity, Grid3X3 } from 'lucide-react';
+import { Activity, AlertTriangle, Grid3X3 } from 'lucide-react';
 
 interface ModelEvaluationChartsProps {
   diseaseType: string;
@@ -91,10 +91,17 @@ export default function ModelEvaluationCharts({ diseaseType }: ModelEvaluationCh
           Model Evaluation Charts - {diseaseName}
         </CardTitle>
         <CardDescription>
-          Confusion matrix and ROC curve for the selected (best) model
+          Illustrative confusion matrix and ROC curve; not connected to training results
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
+        <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <p>
+            The values and curves below are illustrative demo data, not measured model
+            evaluation results.
+          </p>
+        </div>
         {/* Confusion Matrix Heatmap */}
         <div>
           <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -173,9 +180,8 @@ export default function ModelEvaluationCharts({ diseaseType }: ModelEvaluationCh
 
         <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
           <p className="text-xs text-blue-700 dark:text-blue-400">
-            Confusion matrices and ROC curves are generated on the held-out test set (15% of data) after
-            training with 70/15/15 split and 5-fold cross-validation. A higher ROC-AUC indicates better
-            discrimination between healthy and at-risk individuals.
+            The training pipeline does not currently feed evaluation results into this chart.
+            Generate and review actual model artifacts before interpreting any performance metric.
           </p>
         </div>
       </CardContent>

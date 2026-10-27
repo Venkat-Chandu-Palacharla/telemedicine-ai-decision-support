@@ -1,6 +1,6 @@
 # TeleMedicine AI — Decision-Support Health Prediction System
 
-> ⚠️ **Important Disclaimer**: This system is a **decision-support tool** and is **not a substitute for professional medical diagnosis**. All outputs are **deterministic risk scores** (heuristic estimates) and must be verified by qualified healthcare professionals before any clinical decisions are made. The default heuristic engine does **not** produce a statistically calibrated probability.
+> ⚠️ **Important Disclaimer**: This system is a **decision-support tool**, not a substitute for professional medical diagnosis. The Express demo API returns heuristic scores; the frontend's separate Supabase Edge Function returns AI-generated estimates. Neither is clinically validated, and neither should be interpreted as a statistically calibrated probability.
 
 An end-to-end AI healthcare decision-support platform built as a research and educational project, demonstrating machine learning, explainable AI, model evaluation, probability calibration, and full-stack deployment.
 
@@ -8,7 +8,7 @@ An end-to-end AI healthcare decision-support platform built as a research and ed
 
 The platform comprises three integrated components:
 
-- **React + Vite web dashboard** — patient / doctor / admin portals with ML documentation, model-comparison tables, SHAP explainability, ROC curves, and PDF reports.
+- **React + Vite web dashboard** — patient / doctor / admin portals with ML documentation, illustrative model-comparison/evaluation views, and PDF reports.
 - **Express (TypeScript) REST API** — transparent heuristic inference engine with JWT authentication, role-based access control (RBAC), Zod validation, rate limiting, and Swagger/OpenAPI docs.
 - **Python ML research pipeline** — Logistic Regression, Random Forest, XGBoost, and Neural Network with evaluation, calibration reports, ablation study, and SHAP explainability.
 
@@ -38,6 +38,7 @@ Supported diseases: **Heart Disease**, **Diabetes**, **Parkinson's Disease**, an
 
 - The **Express API** runs out-of-the-box with a deterministic heuristic inference engine — no training data or external API keys required.
 - The **Python pipeline** (`ml/`) can produce trained models and evaluation artifacts when datasets are provided. Its offline calibration reports and model files are **not currently integrated into backend predictions**; the backend continues to use the heuristic engine.
+- The **frontend prediction screen** calls the authenticated Supabase `ai-prediction` Edge Function. The Express API is a separate demonstration API and is not called by the frontend.
 
 ---
 
@@ -152,7 +153,7 @@ Instead of a binary diagnosis, the system produces a **deterministic risk score*
 
 > ⚠️ **Terminology**: The default heuristic engine produces a **deterministic risk score**, **not** a statistically calibrated probability. A score of `0.82` does **not** mean "82 out of 100 similar patients will develop this disease." It is a rule-based, reproducible estimate for decision-support. Once a trained, calibrated ML model is integrated, the output can legitimately be labeled a calibrated probability.
 
-Each result also includes a **confidence score** (based on parameter completeness) and **factor-level contributions** (positive / negative / neutral).
+The Express heuristic API also includes a **completeness indicator** and rule-based factor contributions. The frontend's separate Supabase AI Edge Function currently returns an AI-generated confidence estimate; it is not a validated statistical measure. Its generated factor notes are not SHAP values. Prediction percentages are risk scores, not calibrated probabilities.
 
 ---
 
@@ -177,7 +178,7 @@ The API is self-documented via **Swagger/OpenAPI** at `http://localhost:8080/api
 ### Authentication & RBAC
 - **JWT** issued via `/api/auth/login` and verified on protected routes.
 - **Role-based access control** restricts endpoints to `patient`, `doctor`, or `admin` roles.
-- Demo users: `patient@demo.com`, `doctor@demo.com`, `admin@demo.com` (password `demo1234`).
+- Local-development demo users: `patient@demo.com`, `doctor@demo.com`, `admin@demo.com` (password `demo1234`). The demo login endpoint is disabled when `NODE_ENV=production`; configure a real authentication provider before exposing the Express API in production.
 
 ### Sample Prediction Request
 ```bash
@@ -205,7 +206,7 @@ curl -X POST http://localhost:8080/api/predict/heart \
 ```
 
 ### Response (future trained + calibrated model)
-Once a trained, **calibrated** ML model is integrated, the API may return a true calibrated probability:
+This is a future response shape only. The current backend does not load a trained model or fitted calibrator:
 ```json
 {
   "diseaseType": "heart-disease",
@@ -220,7 +221,7 @@ Once a trained, **calibrated** ML model is integrated, the API may return a true
 - **Helmet** security headers, **CORS** allow-list, **rate limiting** (login + prediction).
 - **Zod** input validation; **bcrypt** password hashing.
 - **Sanitized request logging** — JWT `Authorization` header is redacted; no body content is logged.
-- All secrets via **environment variables**; default JWT secret triggers a fail-fast warning in production.
+- Production requires an explicitly supplied, strong, unique JWT secret and rejects known placeholders; demo login is disabled in production.
 
 ---
 
@@ -239,7 +240,7 @@ Once a trained, **calibrated** ML model is integrated, the API may return a true
 
 ## Model Leaderboard (illustrative placeholders)
 
-> ⚠️ **Important**: The numbers below are **illustrative placeholders** shown to demonstrate the reporting format. They are **not** produced by real training runs. Once you run `python run_all.py` with the actual datasets, these will be replaced by real metrics from `ml/outputs/*_metrics_report.csv`.
+> ⚠️ **Important**: This table shows a reporting template only. The frontend does not load metrics from training runs, and running `python run_all.py` does not automatically update this table.
 
 | Model               | Accuracy | Precision | Recall | F1 | ROC-AUC |
 | ------------------- | -------: | --------: | -----: | -: | ------: |
@@ -254,7 +255,7 @@ Once a trained, **calibrated** ML model is integrated, the API may return a true
 
 ### Responsible AI
 - **Not a replacement for doctors** — predictions are decision-support only.
-- **Uncertainty communication** — every result includes a confidence score.
+- **Uncertainty communication** — the frontend displays an unvalidated AI-generated confidence estimate; the Express heuristic API's completeness indicator is not statistical confidence.
 - **Dataset bias** — performance may vary across demographic groups; models were not clinically validated.
 - **Patient privacy** — data is handled with confidentiality in mind.
 
@@ -328,11 +329,17 @@ python run_all.py  # trains models, runs calibration + ablation, writes metrics 
 ```
 
 ### 4. Docker (full stack)
+Copy `.env.example` to `.env`, then set the Supabase project URL, its publishable (public) key, and a unique JWT secret of at least 32 characters. For example, generate the JWT secret locally with `openssl rand -hex 32`. Never commit `.env` or use a placeholder secret in production.
+
+The Supabase values are embedded into the frontend at image build time. They are public client configuration, not service-role secrets. Configure Supabase Auth and review/enable row-level security policies for every table before using real user data. The prediction Edge Function checks the user's Supabase access token; the browser frontend and Express demo API use separate authentication paths.
+
 ```bash
 docker-compose up --build
 # frontend : http://localhost:5173
 # api      : http://localhost:8080  (Swagger: /api-docs)
 ```
+
+Compose requires all three values and fails early if any are missing. In the production Compose configuration, the Express API rejects placeholder or short JWT secrets and disables its demo login. No real authentication provider is currently integrated into the Express API.
 
 ---
 

@@ -1,14 +1,14 @@
 # TeleMedicine AI - Decision-Support Health Prediction System
 
-> ⚠️ **Important Disclaimer**: This system is a **decision-support tool** and is **not a substitute for professional medical diagnosis**. All outputs are **deterministic risk scores** (heuristic estimates) and must be verified by qualified healthcare professionals before any clinical decisions are made. The default heuristic engine does **not** produce a statistically calibrated probability.
+> ⚠️ **Important Disclaimer**: This system is a **decision-support tool**, not a substitute for professional medical diagnosis. The Express demo API returns heuristic scores; the frontend's separate Supabase Edge Function returns AI-generated estimates. Neither is clinically validated, and neither should be interpreted as a statistically calibrated probability.
 
 ## Overview
 
 An end-to-end AI healthcare decision-support platform for disease risk prediction, comprising:
 
-- A **React + Vite** web dashboard (patient / doctor / admin)
+- A **React + Vite** web dashboard (patient / doctor / admin); its disease prediction screen uses a Supabase `ai-prediction` Edge Function
 - An **Express (TypeScript) REST API** with a transparent heuristic inference engine, JWT authentication, role-based access control, and Swagger/OpenAPI documentation
-- A **reproducible Python machine-learning pipeline** (Logistic Regression, Random Forest, XGBoost, Neural Network) with full evaluation and SHAP explainability
+- A **Python machine-learning research pipeline** (Logistic Regression, Random Forest, XGBoost, Neural Network) with offline evaluation and SHAP analysis
 
 Supported diseases: **Heart Disease**, **Diabetes**, **Parkinson's Disease**, and **Hypertension**.
 
@@ -19,21 +19,16 @@ Supported diseases: **Heart Disease**, **Diabetes**, **Parkinson's Disease**, an
                  │                 TeleMedicine AI              │
                  └──────────────────────────────────────────────┘
         ┌────────────────────────┴────────────────────────┐
-        │                                                 │
- Production / Demo (works offline)              Research ML (needs data)
-        │                                                 │
-Heuristic Inference Engine (Express API)      Python Training Pipeline
-        │                                                 │
- Risk Score + Confidence + RBAC + Swagger      LR / RF / XGBoost / NN + Calibration
-        │                                                 │
-        │                                     Evaluation + SHAP + ROC + CM
-        └────────────────────────┬────────────────────────┘
-                                 │
-                      Web Dashboard (React/Vite)
+        │                         │                       │
+ React/Vite dashboard     Express demo API        Python research pipeline
+        │                         │                       │
+ Supabase AI Edge Function  Heuristic scoring       Offline training/evaluation
+ (Supabase Auth token)       (separate JWT demo)    (datasets required)
 ```
 
-- The **Express API** runs out-of-the-box with an in-memory store and a deterministic heuristic inference engine — no training data or external API keys required.
-- The **Python pipeline** (`ml/`) produces real trained models, model comparison, and explainability artifacts. Once trained, the heuristic engine can be swapped for the exported `.joblib` models **without changing the API contract**.
+- The **frontend prediction screen** calls the authenticated Supabase `ai-prediction` Edge Function. It is not connected to the Express API.
+- The **Express API** is a separate demonstration service with an in-memory user store and deterministic heuristic inference engine. Its demo login is disabled in production, and no production identity provider or trained-model serving integration is included.
+- The **Python pipeline** (`ml/`) can generate offline research artifacts when datasets are present. Those artifacts and metrics are not automatically loaded by the frontend or Express API.
 
 ## Repository Layout
 
@@ -76,13 +71,15 @@ For each disease, four model families are trained and compared on the **same** t
 - **Accuracy**, **Precision**, **Recall**, **F1-Score**
 - **ROC-AUC** (discrimination)
 - **Confusion Matrix** (visualized as a heatmap)
-- **5-fold Cross-Validation** on the training split
+- Cross-validation is not currently implemented
 
 ### Validation Methodology
-A proper **70 / 15 / 15 train-validation-test** split is used:
+The current pipeline uses a **70 / 15 / 15 train-validation-test** split:
 1. **Train** — fit the model
-2. **Validation** — hyperparameter tuning (GridSearchCV / RandomizedSearchCV)
-3. **Test** — final, held-out evaluation (never used for tuning)
+2. **Validation** — select the model using ROC-AUC and evaluate offline calibration
+3. **Test** — held-out evaluation
+
+The pipeline does not implement GridSearchCV/RandomizedSearchCV or cross-validation. Calibration reports are offline research results; the frontend and Express API do not apply a fitted calibrator.
 
 ### Class-Imbalance Handling
 - **SMOTE** oversampling applied to the training split only
@@ -102,7 +99,7 @@ Instead of a binary diagnosis, the system produces a **deterministic risk score*
 
 > ⚠️ **Terminology note**: The default heuristic engine produces a **deterministic risk score**, **not** a statistically calibrated probability. In other words, a score of `0.82` does **not** mean "82 out of 100 similar patients will develop this disease." It is a rule-based, reproducible estimate for decision-support. Once a trained, calibrated ML model is integrated (see `ml/`), the output can legitimately be labeled a calibrated probability.
 
-Each result also includes a **confidence score** (based on parameter completeness) and **factor-level contributions** (positive / negative / neutral).
+The Express heuristic API includes a **completeness indicator** and rule-based factor contributions. Separately, the frontend Edge Function returns an unvalidated AI-generated confidence estimate and generated factor notes, not SHAP values.
 
 ### Calibration Pipeline (trained ML models only)
 Calibration is an **ML-model operation** and is **not** applied to the heuristic engine. When trained models are used, probabilities are calibrated before risk-tiering:
@@ -186,7 +183,7 @@ curl -X POST http://localhost:8080/api/predict/heart \
 }
 ```
 
-Once a trained, **calibrated** ML model is integrated, the API may return a true calibrated probability:
+This is a future response shape only. The current API does not load a trained model or fitted calibrator:
 ```json
 {
   "diseaseType": "heart-disease",
@@ -204,9 +201,9 @@ Once a trained, **calibrated** ML model is integrated, the API may return a true
 | Heart Disease | Cleveland Heart Disease | UCI ML Repository | 303 | 13 + target | `target` |
 | Diabetes | Pima Indians Diabetes | NIDDK | 768 | 8 + target | `Outcome` |
 | Parkinson's | Oxford Parkinson's | UCI ML Repository | 195 | 22 + target | `status` |
-| Hypertension | Cardiovascular Disease / Framingham Heart Study | Kaggle (Framingham) | 4,240 | 15 + target | `TenYearCHD` |
+| 10-year coronary heart disease risk | Framingham Heart Study CHD | Kaggle (Framingham) | 4,240 | 15 + target | `TenYearCHD` |
 
-> **Hypertension note**: The `hypertension.csv` in this repo is derived from the **Framingham Heart Study cardiovascular disease dataset** (Kaggle, "Cardiovascular Disease" / "framingham.csv"). The target column is `TenYearCHD` (10-year coronary heart disease risk); systolic/diastolic blood pressure are primary features. See `datasets/README.md` for the exact name, URL, sample count, feature count, target, and license.
+> The Framingham `TenYearCHD` target is coronary heart disease risk, not hypertension. The backend hypertension endpoint is a separate heuristic scoring task. See `datasets/README.md` for dataset details.
 
 See `datasets/README.md` for details and preprocessing notes.
 
@@ -214,7 +211,7 @@ See `datasets/README.md` for details and preprocessing notes.
 
 ### Responsible AI
 - **Not a replacement for doctors** — predictions are decision-support only.
-- **Uncertainty communication** — every result includes a confidence score.
+- **Uncertainty communication** — the Supabase Edge Function returns an AI-generated confidence estimate that is not a validated statistical measure; the Express API's completeness indicator is not statistical confidence.
 - **Dataset bias** — performance may vary across demographic groups; models were not clinically validated.
 - **Patient privacy** — data is handled with confidentiality in mind.
 
@@ -227,7 +224,7 @@ See `datasets/README.md` for details and preprocessing notes.
 
 ## Model Leaderboard (illustrative placeholders)
 
-> ⚠️ **Important**: The numbers below are **illustrative placeholders** shown to demonstrate the reporting format. They are **not** produced by real training runs. Once you run `python run_all.py` with the actual datasets, these will be replaced by real metrics from `ml/outputs/*_metrics_report.csv`.
+> ⚠️ **Important**: These are illustrative placeholders, not measured results. The frontend does not load metrics from training runs, and running `python run_all.py` does not automatically update this table.
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |-------|----------|-----------|--------|-----|---------|
@@ -296,6 +293,8 @@ Heart Disease → XGBoost → SHAP
 ## Getting Started
 
 ### 1. Frontend (React/Vite)
+The frontend prediction screen uses Supabase. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `mental-health-bot-main/.env` before running locally; the publishable key is public client configuration, not a service-role secret. Configure Supabase Auth and review row-level security policies before using real user data.
+
 ```bash
 cd mental-health-bot-main
 npm install
@@ -317,11 +316,15 @@ python run_all.py  # trains models, writes metrics + plots to ml/outputs/
 ```
 
 ### 4. Docker (full stack)
+Copy the repository-root `.env.example` to `.env` and set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and a unique `JWT_SECRET` of at least 32 characters. Generate the JWT secret locally, for example with `openssl rand -hex 32`. Do not commit `.env`.
+
 ```bash
 docker-compose up --build
 # frontend : http://localhost:5173
 # api      : http://localhost:8080  (Swagger: /api-docs)
 ```
+
+The frontend uses the authenticated Supabase `ai-prediction` Edge Function; the Express API is a separate demonstration API and is not called by the frontend. Supabase build values are public client configuration embedded in the frontend image, not service-role secrets. Configure Supabase Auth and review row-level security policies before using real user data. The Express API disables its demo login in production and needs a real authentication provider before production use.
 
 ## CI
 `.github/workflows/ci.yml` runs on push/PR to `main`/`develop`:

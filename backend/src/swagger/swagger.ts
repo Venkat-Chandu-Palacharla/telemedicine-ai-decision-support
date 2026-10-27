@@ -13,7 +13,7 @@ description: `REST API for heuristic disease-risk estimation (decision support).
 ## Authentication
 Use the demo login endpoint to obtain a JWT, then include it in the \`Authorization: Bearer <token>\` header. Roles: \`patient\`, \`doctor\`, \`admin\`.
 
-Demo users:
+Local-development demo users (demo login is disabled in production):
 - patient@demo.com (patient)
 - doctor@demo.com (doctor)
 - admin@demo.com (admin)`,
@@ -41,4 +41,3 @@ Demo users:
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-

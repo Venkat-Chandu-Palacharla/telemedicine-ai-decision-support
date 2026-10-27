@@ -67,6 +67,13 @@ export default function ClassImbalance({ diseaseType }: { diseaseType: string })
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <p>
+            The displayed class counts are illustrative examples, not verified counts from the
+            datasets configured for this project.
+          </p>
+        </div>
         {/* Class distribution */}
         <div>
           <div className="flex items-center justify-between mb-3">

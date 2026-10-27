@@ -55,6 +55,10 @@ const loginLimiter = rateLimit({
 
 router.post("/login", loginLimiter, validateBody(loginSchema), async (req, res, next) => {
   try {
+    if (env.nodeEnv === "production") {
+      throw new HttpError(503, "Demo login is disabled in production.");
+    }
+
     const { email, password, role, name } = req.body;
     const sanitizedEmail = email.trim().toLowerCase();
     const account = demoUsers[sanitizedEmail];
@@ -95,4 +99,3 @@ router.post("/login", loginLimiter, validateBody(loginSchema), async (req, res, 
 });
 
 export default router;
-

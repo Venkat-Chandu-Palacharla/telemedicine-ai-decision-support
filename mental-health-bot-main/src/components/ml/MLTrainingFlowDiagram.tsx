@@ -20,7 +20,7 @@ const flowSteps = [
     icon: Brain,
     title: 'Training',
     description: 'Model learning from data',
-    details: ['Cross-validation', 'Hyperparameter tuning', 'Model selection'],
+    details: ['Fit on training split', 'Select by validation ROC-AUC', 'No cross-validation or grid search'],
     color: 'bg-amber-500',
   },
   {
@@ -33,8 +33,8 @@ const flowSteps = [
   {
     icon: Activity,
     title: 'Prediction',
-    description: 'Real-time inference',
-    details: ['Risk assessment', 'Confidence scoring', 'Recommendations'],
+    description: 'Offline research output',
+    details: ['Evaluation artifacts', 'No trained model served by the app', 'Not connected to frontend predictions'],
     color: 'bg-red-500',
   },
 ];
@@ -112,9 +112,9 @@ export default function MLTrainingFlowDiagram() {
 ┌──────────────┐    ┌───────────────┐    ┌──────────────┐    ┌─────────────┐    ┌─────────────┐
 │   DATASET    │───▶│ PREPROCESSING │───▶│   TRAINING   │───▶│ EVALUATION  │───▶│ PREDICTION  │
 │              │    │               │    │              │    │             │    │             │
-│ • UCI Heart  │    │ • Cleaning    │    │ • GB/RF/SVM  │    │ • Accuracy  │    │ • Risk %    │
-│ • Pima DM    │    │ • Scaling     │    │ • CV (5-fold)│    │ • Precision │    │ • Confidence│
-│ • Parkinson  │    │ • Encoding    │    │ • Tuning     │    │ • Recall    │    │ • Advice    │
+│ • UCI Heart  │    │ • Cleaning    │    │ • LR/RF/XGB/NN│   │ • Accuracy  │    │ • artifacts │
+│ • Pima DM    │    │ • Scaling     │    │ • Train split│    │ • Precision │    │ • Offline   │
+│ • Parkinson  │    │ • Encoding    │    │ • Validation │    │ • ROC-AUC   │    │ • No serving│
 └──────────────┘    └───────────────┘    └──────────────┘    └─────────────┘    └─────────────┘
 `}
           </pre>
