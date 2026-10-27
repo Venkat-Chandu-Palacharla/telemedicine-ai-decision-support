@@ -30,8 +30,8 @@ export interface DiseaseConfig {
 // bounded relationship based on threshold and direction.
 function activation(value: number, rule: FactorRule): number {
   const diff = value - rule.threshold;
-  const t = rule.direction === "higher" ? diff / Math.max(1, rule.threshold) : -diff / Math.max(1, rule.threshold);
-  // bounded logistic-like transform to [0,1]
+  const scale = Math.max(Math.abs(rule.threshold), 1e-6);
+  const t = rule.direction === "higher" ? diff / scale : -diff / scale;
   return 1 / (1 + Math.exp(-3 * t));
 }
 
@@ -45,9 +45,9 @@ export const diseaseConfigs: Record<DiseaseType, DiseaseConfig> = {
     name: "Heart Disease",
     description: "Cardiovascular disease risk based on established clinical indicators.",
     modelName: "Heuristic Cardiac Risk Index",
-    family: "Clinical scoring (rule-based, calibrated)",
-methodology:
-      "Weighted physiological indicators (age, blood pressure, glucose, BMI, cholesterol, heart rate) aggregated via a calibrated logistic score. Output is a deterministic heuristic risk score for decision support, not a statistically calibrated probability and not a clinical diagnosis.",
+    family: "Rule-based heuristic scoring",
+    methodology:
+      "Weighted physiological indicators (age, blood pressure, glucose, BMI, cholesterol, and heart rate) are combined into a deterministic heuristic risk score for decision support. The score is not a statistically calibrated probability or a clinical diagnosis.",
     referenceStudy: "Based on Framingham-style and Cleveland/UCI risk factor weighting.",
     sigmoid: { k: 1.6, x0: 0.62 },
     confidenceByCompleteness: { complete: 88, partial: 72, minimal: 55 },
@@ -73,9 +73,9 @@ methodology:
     name: "Diabetes",
     description: "Type 2 diabetes risk based on glycemic and metabolic indicators.",
     modelName: "Heuristic Glycemic Risk Index",
-    family: "Clinical scoring (rule-based, calibrated)",
-methodology:
-      "Weighted glycemic and metabolic indicators (glucose, BMI, blood pressure, age) aggregated via a calibrated logistic score. Output is a deterministic heuristic risk score for decision support, not a statistically calibrated probability and not a diagnostic result.",
+    family: "Rule-based heuristic scoring",
+    methodology:
+      "Weighted glycemic and metabolic indicators (glucose, BMI, blood pressure, and age) are combined into a deterministic heuristic risk score for decision support. The score is not a statistically calibrated probability or a diagnostic result.",
     referenceStudy: "Based on Pima Indians Diabetes and ADA risk-factor weighting.",
     sigmoid: { k: 1.8, x0: 0.6 },
     confidenceByCompleteness: { complete: 90, partial: 74, minimal: 58 },
@@ -123,9 +123,9 @@ methodology:
     name: "Hypertension",
     description: "Blood pressure risk based on systolic/diastolic measures and supporting indicators.",
     modelName: "Heuristic Blood Pressure Index",
-    family: "Clinical scoring (rule-based, calibrated)",
-methodology:
-      "Aggregates systolic and diastolic blood pressure with age, BMI, and glucose using a calibrated logistic score. Output is a deterministic heuristic risk score for decision support only, not a statistically calibrated probability.",
+    family: "Rule-based heuristic scoring",
+    methodology:
+      "Systolic and diastolic blood pressure, age, BMI, and glucose are combined into a deterministic heuristic risk score for decision support. The score is not a statistically calibrated probability or a diagnosis.",
     referenceStudy: "Informed by ACC/AHA hypertension staging.",
     sigmoid: { k: 2.0, x0: 0.55 },
     confidenceByCompleteness: { complete: 89, partial: 73, minimal: 56 },
@@ -175,4 +175,3 @@ export const diseaseList = Object.values(diseaseConfigs).map((c) => ({
   name: c.name,
   description: c.description,
 }));
-

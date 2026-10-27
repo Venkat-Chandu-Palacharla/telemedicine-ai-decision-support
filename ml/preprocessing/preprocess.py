@@ -67,7 +67,8 @@ def preprocess(
     # split. Both the scaler and SMOTE therefore learn parameters/neighbors
     # exclusively from training data. The validation and test sets are
     # transformed with `transform` (never `fit`), so no information from the
-    # held-out sets leaks into preprocessing. This is also cross-validation safe.
+    # held-out sets leaks into preprocessing. Cross-validation requires a
+    # separate fold-local pipeline and is not implemented by this function.
     steps = [("scaler", StandardScaler())]
     if apply_smote:
         steps.append(("smote", SMOTE(random_state=SEED)))

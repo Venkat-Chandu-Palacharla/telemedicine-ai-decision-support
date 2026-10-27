@@ -10,7 +10,7 @@ The platform comprises three integrated components:
 
 - **React + Vite web dashboard** — patient / doctor / admin portals with ML documentation, model-comparison tables, SHAP explainability, ROC curves, and PDF reports.
 - **Express (TypeScript) REST API** — transparent heuristic inference engine with JWT authentication, role-based access control (RBAC), Zod validation, rate limiting, and Swagger/OpenAPI docs.
-- **Reproducible Python ML pipeline** — Logistic Regression, Random Forest, XGBoost, and Neural Network with full evaluation, **probability calibration**, **ablation study**, and SHAP explainability.
+- **Python ML research pipeline** — Logistic Regression, Random Forest, XGBoost, and Neural Network with evaluation, calibration reports, ablation study, and SHAP explainability.
 
 Supported diseases: **Heart Disease**, **Diabetes**, **Parkinson's Disease**, and **Hypertension**.
 
@@ -37,7 +37,7 @@ Supported diseases: **Heart Disease**, **Diabetes**, **Parkinson's Disease**, an
 ```
 
 - The **Express API** runs out-of-the-box with a deterministic heuristic inference engine — no training data or external API keys required.
-- The **Python pipeline** (`ml/`) produces real trained models, calibration, ablation, and explainability artifacts. Once trained, the heuristic engine can be swapped for the exported `.joblib` models **without changing the API contract**.
+- The **Python pipeline** (`ml/`) can produce trained models and evaluation artifacts when datasets are provided. Its offline calibration reports and model files are **not currently integrated into backend predictions**; the backend continues to use the heuristic engine.
 
 ---
 
@@ -86,30 +86,30 @@ For each disease, four model families are trained and compared on the **same** t
 - **Accuracy**, **Precision**, **Recall**, **F1-Score**
 - **ROC-AUC** (discrimination)
 - **Confusion Matrix** (visualized as a heatmap)
-- **5-fold Cross-Validation** on the training split
+- Model metrics on the held-out test split
 
 ### Validation Methodology
 A proper **70 / 15 / 15 train-validation-test** split is used:
 1. **Train** — fit the model
-2. **Validation** — hyperparameter tuning (GridSearchCV / RandomizedSearchCV)
-3. **Test** — final, held-out evaluation (never used for tuning)
+2. **Validation** — selects the model by ROC-AUC and is also used for offline calibration evaluation; the current pipeline does not implement cross-validation or GridSearchCV/RandomizedSearchCV
+3. **Test** — held-out reporting for candidate models; it is not used for model selection or tuning
 
-### Probability Calibration (trained ML models)
-Calibration is an **ML-model operation** and is **not** applied to the heuristic engine. When trained models are used, probabilities are calibrated before risk-tiering:
+### Offline Calibration Evaluation (ML research pipeline)
+The ML pipeline can fit Platt scaling and isotonic regression on validation data and report calibration metrics for trained models. These evaluation artifacts are not selected or integrated into backend predictions; the heuristic engine remains unchanged.
 
 ```
 Prediction
      ↓
 XGBoost / RF / LR / NN
      ↓
-Probability Calibration (Platt Scaling / Isotonic Regression)
+Calibration evaluation (Platt Scaling / Isotonic Regression)
      ↓
-Calibrated Risk Probability
+Brier / ECE / reliability reports
      ↓
-Risk Level
+Not integrated into backend risk output
 ```
 
-Calibration is fit **only on the validation split** and evaluated on the held-out test set. We report the **Brier Score** and **Expected Calibration Error (ECE)** alongside a **calibration (reliability) curve**. See `ml/calibration.py`.
+The current training workflow uses validation ROC-AUC for model selection and also fits calibrators on that validation split. It reports **Brier Score**, **Expected Calibration Error (ECE)**, and reliability curves on the test split. Because validation serves both selection and calibration and no calibrator is deployed, treat these as research reports, not evidence that the API produces calibrated probabilities. See `ml/calibration.py`.
 
 ### Ablation Study
 `ml/ablation.py` isolates the effect of each preprocessing step on performance, so the project demonstrates **actual experimentation**, not just model training:
@@ -231,9 +231,9 @@ Once a trained, **calibrated** ML model is integrated, the API may return a true
 | Heart Disease | Cleveland Heart Disease | UCI ML Repository | 303 | 13 + target | `target` |
 | Diabetes | Pima Indians Diabetes | NIDDK | 768 | 8 + target | `Outcome` |
 | Parkinson's | Oxford Parkinson's | UCI ML Repository | 195 | 22 + target | `status` |
-| Hypertension | Framingham Heart Study CHD | Kaggle (Framingham) | 4,240 | 15 + target | `TenYearCHD` |
+| 10-year coronary heart disease risk | Framingham Heart Study CHD | Kaggle (Framingham) | 4,240 | 15 + target | `TenYearCHD` |
 
-> The `hypertension.csv` is derived from the **Framingham Heart Study cardiovascular disease (CHD) dataset** — exact name, URL, sample count, feature count, target, and license are documented in `datasets/README.md`.
+> The Framingham `TenYearCHD` target is coronary heart disease risk, not hypertension. The backend hypertension endpoint is a separate heuristic scoring task. Dataset source, target definition, and limitations are documented in `datasets/README.md`.
 
 ---
 

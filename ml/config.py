@@ -17,9 +17,6 @@ TRAIN_RATIO = 0.70
 VAL_RATIO = 0.15
 TEST_RATIO = 0.15
 
-# Cross-validation folds
-CV_FOLDS = 5
-
 # Random seed for reproducibility
 SEED = 42
 
@@ -44,10 +41,10 @@ DATASETS = {
         "name": "Oxford Parkinson's Disease",
         "source": "UCI ML Repository (Oxford)",
     },
-"hypertension": {
-        "path": DATASETS_DIR / "hypertension" / "hypertension.csv",
+    "coronary-heart-disease": {
+        "path": DATASETS_DIR / "coronary-heart-disease" / "framingham.csv",
         "target": "target",
-        "name": "Hypertension Risk (Framingham-derived)",
+        "name": "Framingham Ten-Year Coronary Heart Disease Risk",
         "source": "Cardiovascular Disease / Framingham Heart Study (Kaggle)",
     },
 }

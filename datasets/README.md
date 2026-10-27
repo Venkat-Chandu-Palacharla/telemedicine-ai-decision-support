@@ -12,7 +12,7 @@ This directory contains the raw datasets used by the ML training pipeline (`../m
 | `heart/` | `heart.csv` | Heart Disease | UCI Heart Disease (Cleveland) — [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/heart+disease) |
 | `diabetes/` | `diabetes.csv` | Diabetes | Pima Indians Diabetes (NIDDK) — [Kaggle](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database) |
 | `parkinsons/` | `parkinsons.csv` | Parkinson's | Oxford Parkinson's Voice — [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/parkinsons) |
-| `hypertension/` | `hypertension.csv` | Hypertension | Cardiovascular Disease / Framingham Heart Study — [Kaggle](https://www.kaggle.com/datasets/aasheesh200/framingham-heart-study-dataset) |
+| `coronary-heart-disease/` | `framingham.csv` | 10-year coronary heart disease risk | Framingham Heart Study — [Kaggle](https://www.kaggle.com/datasets/aasheesh200/framingham-heart-study-dataset) |
 
 ## Target Columns
 
@@ -21,11 +21,11 @@ Each CSV must include a binary target (0/1) column:
 - `heart/`: target column `target`
 - `diabetes/`: target column `Outcome`
 - `parkinsons/`: target column `status`
-- `hypertension/`: target column `target`
+- `coronary-heart-disease/`: target column `target` (mapped from `TenYearCHD`)
 
-## Hypertension Dataset (exact source)
+## Framingham Coronary Heart Disease Dataset
 
-The `hypertension.csv` file is derived from the **Framingham Heart Study cardiovascular disease (CHD) dataset**, a widely used public dataset for 10-year coronary heart disease risk prediction.
+The `framingham.csv` file is derived from the **Framingham Heart Study cardiovascular disease (CHD) dataset**, used here for 10-year coronary heart disease risk prediction. Its target is not a hypertension diagnosis.
 
 | Field | Value |
 |-------|-------|
@@ -34,9 +34,9 @@ The `hypertension.csv` file is derived from the **Framingham Heart Study cardiov
 | **Samples** | 4,240 (after dropping missing `education`) |
 | **Features** | 15 (age, sex, cigsPerDay, totChol, sysBP, diaBP, BMI, heartRate, glucose, etc.) |
 | **Target** | `TenYearCHD` (binary 10-year CHD risk) — mapped to `target` in this repo |
-| **License** | Public dataset for research/educational use (Kaggle terms) |
+| **License** | Follow the source dataset's current terms; verify permitted use before downloading |
 
-> ⚠️ **Note**: The original dataset's target is `TenYearCHD`; in `ml/config.py` the target column used is `target` to match the local `hypertension.csv` convention. Ensure the CSV you place under `datasets/hypertension/` has a binary target column named `target` (or adjust `ml/config.py` accordingly).
+> ⚠️ **Task definition**: This data supports 10-year coronary heart disease risk prediction, not hypertension prediction. Place the CSV at `datasets/coronary-heart-disease/framingham.csv` with the binary `TenYearCHD` target mapped to `target`. Do not relabel this target as hypertension.
 
 ## Preprocessing
 

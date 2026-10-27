@@ -15,9 +15,9 @@ export interface EngineInput {
 }
 
 /**
- * Heuristic (rule-based, calibrated) inference engine.
+ * Heuristic (rule-based) inference engine.
  *
- * This returns a *heuristic probability estimate* for decision-support purposes.
+ * This returns a deterministic heuristic risk score for decision-support purposes.
  * It is deterministic, fully testable, and does not require training data or an
  * external model. It is NOT a trained statistical model. Once trained ML models
  * are produced by the Python pipeline (ml/), this engine can be swapped for a
@@ -74,15 +74,14 @@ export function computePrediction(diseaseType: DiseaseType, input: Record<string
     throw new HttpError(400, "No valid parameters provided for risk calculation.");
   }
 
-  // Normalize to fraction of max possible, then calibrate via sigmoid
+  // Normalize to fraction of maximum contribution, then squash to a score with a sigmoid.
   const normalized = weightedSum / totalWeight;
   const { k, x0 } = config.sigmoid;
-  let probability = 1 / (1 + Math.exp(-k * (normalized - x0)));
-  // Normalize the sigmoid output to a 0-100 risk percentage across a plausible spread
-  let riskPercentage = Math.round(Math.max(5, Math.min(95, probability * 100)));
+  const sigmoidScore = 1 / (1 + Math.exp(-k * (normalized - x0)));
+  let riskPercentage = Math.round(Math.max(5, Math.min(95, sigmoidScore * 100)));
 
-  // Apply a deterministic "calibration" so strong/extreme and very healthy
-  // parameter sets still resolve to clearly separated risk tiers.
+  // Apply deterministic heuristic bounds so extreme and low-risk parameter
+  // sets resolve to distinct risk tiers. These are not statistical calibration.
   if (normalized >= 0.7) riskPercentage = Math.max(riskPercentage, 70);
   if (normalized >= 0.9) riskPercentage = Math.max(riskPercentage, 85);
   if (normalized <= 0.33) riskPercentage = Math.min(riskPercentage, 40);
@@ -168,4 +167,3 @@ export function predictMentalHealth(input: MentalHealthInput): PredictionRespons
     mood: input.moodRating,
   });
 }
-

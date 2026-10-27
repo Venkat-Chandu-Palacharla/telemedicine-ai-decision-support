@@ -64,11 +64,16 @@ def train_disease(disease_id: str, cfg: dict) -> dict:
     save_scaler(scaler, disease_id)
 
     metrics_list = []
+    validation_metrics = []
     trained_models = {}
 
     # --- Classical models ---
     for name, model in get_sklearn_models().items():
         model.fit(X_train, y_train)
+        val_prob = model.predict_proba(X_val)[:, 1]
+        val_metrics, _ = evaluate_model(name, y_val, val_prob)
+        validation_metrics.append(val_metrics)
+
         y_prob = model.predict_proba(X_test)[:, 1]
         metrics, y_pred = evaluate_model(name, y_test, y_prob)
         metrics_list.append(metrics)
@@ -83,6 +88,10 @@ def train_disease(disease_id: str, cfg: dict) -> dict:
     # --- Neural Network ---
     nn_model, nn_kind = build_nn(X_train.shape[1])
     history = nn_fit(nn_model, nn_kind, X_train, y_train, X_val, y_val)
+    val_prob = nn_predict_proba(nn_model, nn_kind, X_val)
+    val_metrics, _ = evaluate_model("Neural Network", y_val, val_prob)
+    validation_metrics.append(val_metrics)
+
     y_prob = nn_predict_proba(nn_model, nn_kind, X_test)
     metrics, y_pred = evaluate_model("Neural Network", y_test, y_prob)
     metrics_list.append(metrics)
@@ -98,11 +107,20 @@ def train_disease(disease_id: str, cfg: dict) -> dict:
     # Save consolidated metrics
     report_path = save_metrics_report(metrics_list, disease_id)
     summary = summarize_results(metrics_list, disease_id, cfg["name"])
+    validation_summary = summarize_results(validation_metrics, disease_id, cfg["name"])
+    best_name = validation_summary["best_model"]
+    best_test_metrics = next(
+        metrics for metrics in metrics_list if metrics["model"] == best_name
+    )
+    summary["best_model"] = best_name
+    summary["best_roc_auc"] = float(best_test_metrics["roc_auc"])
+    summary["selection_metric"] = "validation_roc_auc"
+    summary["selection_roc_auc"] = validation_summary["best_roc_auc"]
+    summary["validation_metrics"] = validation_metrics
     summary["report_path"] = report_path
     summary["history"] = None
 
     # SHAP explainability on the best model
-    best_name = summary["best_model"]
     best_model = trained_models.get(best_name)
     try:
         shap_result = compute_shap(best_model, X_train, disease_id, feature_names)
@@ -137,7 +155,11 @@ def train_disease(disease_id: str, cfg: dict) -> dict:
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, default=str)
 
-    print(f"\nBest model: {best_name} (ROC-AUC {summary['best_roc_auc']:.3f})")
+    print(
+        f"\nSelected model: {best_name} "
+        f"(validation ROC-AUC {summary['selection_roc_auc']:.3f}; "
+        f"test ROC-AUC {summary['best_roc_auc']:.3f})"
+    )
     print(f"Artifacts saved to {MODELS_DIR}")
     return summary
 

@@ -1,6 +1,6 @@
 # TeleMedicine AI - Machine Learning Research Pipeline
 
-This directory contains a **reproducible, research-grade machine-learning pipeline** for disease risk prediction. It complements the production decision-support backend (`../backend`) and provides the actual trained statistical models, model comparison, evaluation, and explainability artifacts.
+This directory contains a reproducible research and educational machine-learning pipeline for disease risk prediction. It complements the decision-support backend (`../backend`) and can produce trained statistical models, evaluation, and explainability artifacts when the required datasets are supplied.
 
 > ⚠️ **Important**: This pipeline is for **research and educational purposes**. It is a **decision-support tool**, not a substitute for professional medical diagnosis.
 
@@ -33,11 +33,13 @@ For each model we report:
    - Categorical encoding
    - **Class-imbalance handling** using SMOTE (imbalanced-learn)
 3. **Train / Validation / Test split** (70/15/15)
-4. **Cross-validation** (5-fold) on the training split
-5. **Hyperparameter tuning** using GridSearchCV / RandomizedSearchCV
-6. **Final evaluation** on the held-out test set
+4. Fit the configured models using the preprocessed training split
+5. Select the model with the highest validation ROC-AUC
+6. Evaluate candidate models on the held-out test set for reporting; test metrics do not select the model
 7. **Explainability** using SHAP (feature importance + SHAP summary plots)
-8. **Probability calibration** (Platt scaling / Isotonic regression) on the best model, with Brier score, ECE, and calibration curves
+8. Evaluate Platt scaling and isotonic regression for the selected model, reporting Brier score, ECE, and calibration curves
+
+> **Current limitations:** `train.py` does not currently implement five-fold cross-validation or GridSearchCV/RandomizedSearchCV. Model selection uses validation ROC-AUC. The validation split is also used to fit calibration, so calibration selection requires additional care; the test metrics are for final reporting only and must not be used for tuning or model selection. A leakage-safe cross-validation workflow should keep imputation, scaling, SMOTE, and the estimator inside a fold-specific imbalanced-learn pipeline.
 
 ### No-Data-Leakage Workflow
 
@@ -54,14 +56,14 @@ Test 15% ─────── NEVER TOUCHED UNTIL FINAL
 ```
 
 - The **train/validation/test split happens first**.
-- **SMOTE** is applied **only inside an `imblearn.Pipeline`** fit on the **training split** — never before the split, and never on validation/test.
-- The **scaler** is fit on training only and applied via `transform` to val/test.
+- The split happens before preprocessing. The imputer and scaler are fit only on training data.
+- **SMOTE** is applied only to the training split through an imbalanced-learn pipeline, never to validation/test.
 - **Calibration** is fit on the validation split only; the held-out test set is reserved for final, unbiased evaluation.
-- The test set does **not** influence preprocessing, hyperparameter tuning, calibration, or model selection.
+- There is no cross-validation or hyperparameter search in the current training loop. Validation ROC-AUC selects the model; the test set is used to report model and calibration metrics and must not be used for tuning or model selection.
 
 ### Probability Calibration
 
-For the best-performing model, we calibrate raw decision-function probabilities using:
+For the model currently selected by the training workflow, the script fits Platt and isotonic calibrators on validation data and reports their held-out test metrics:
 - **Platt Scaling** (sigmoid / logistic)
 - **Isotonic Regression**
 
@@ -82,7 +84,7 @@ Calibrated Risk Probability
 Risk Level
 ```
 
-> ⚠️ Calibration is an **ML-model operation** and is **not** applied to the default heuristic backend engine (which returns a deterministic risk score, not a calibrated probability). See `calibration.py` and `train.py`.
+> ⚠️ These are offline calibration evaluations, not a selected or production-integrated calibration artifact. The backend does not load these models or calibrators; its heuristic engine returns a deterministic risk score, not a calibrated probability. Do not select a calibration method using the test metrics. See `calibration.py` and `train.py`.
 
 ## Directory Layout
 
@@ -143,4 +145,6 @@ Artifacts are written to `ml/outputs/`:
 
 ## Integration with Backend
 
-The default application backend (`../backend`) uses a transparent heuristic inference engine so the demo runs without training data. Once you train the models here, you can replace the heuristic engine with the trained `.joblib` artifacts (see `models/serializer.py`) without changing the API contract.
+The default application backend (`../backend`) uses a transparent heuristic inference engine so the demo runs without training data. Training models here does not integrate them into backend predictions: the inference path does not load model, preprocessing, or calibrator artifacts. Integration requires an explicitly implemented and tested inference service/path that applies the same preprocessing and model/calibrator used during training.
+
+The Framingham dataset configuration is for **10-year coronary heart disease risk**, not hypertension. The backend's separate hypertension endpoint remains a heuristic blood-pressure score and is not trained using the Framingham CHD target.

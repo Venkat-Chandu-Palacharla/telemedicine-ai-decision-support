@@ -114,7 +114,7 @@ def calibrate_and_report(
         "curve_raw": curve_raw,
         "curve_platt": curve_platt,
         "curve_isotonic": curve_iso,
-        "status": "calibrated",
+        "status": "evaluated",
     }
 
     # Save report
